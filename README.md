@@ -4,6 +4,10 @@
 
 ---
 
+Linkten siteye ulaşabilirsiniz.
+https://english-vocab-learning-chgcipu3jj88u4frdjbiby.streamlit.app
+
+---
 ## Özellikler
 
 - Rastgele kelime kartları
