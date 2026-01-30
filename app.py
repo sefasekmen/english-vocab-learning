@@ -73,8 +73,11 @@ st.markdown("""
 # OTURUM DURUMU BAŞLATMA
 # ============================================================================
 
+if "base_data" not in st.session_state:
+    st.session_state.base_data = DataManager.load_data()
+
 if "data" not in st.session_state:
-    st.session_state.data = DataManager.load_data()
+    st.session_state.data = st.session_state.base_data.copy()
 
 if "current_word" not in st.session_state:
     st.session_state.current_word = None
@@ -151,7 +154,8 @@ with st.sidebar:
     
     with col2:
         if st.button("🔴 İlerlemeyi Sıfırla", use_container_width=True):
-            st.session_state.data = DataManager.reset_progress()
+            st.session_state.base_data = DataManager.load_data()
+            st.session_state.data = st.session_state.base_data.copy()
             st.session_state.current_word = None
             st.session_state.show_meaning = False
             st.success("✅ İlerleme sıfırlandı.")
@@ -241,7 +245,6 @@ with col2:
                     st.session_state.data,
                     st.session_state.current_word
                 )
-                DataManager.save_data(st.session_state.data)
                 
                 # Reset for next word
                 st.session_state.current_word = None
@@ -262,7 +265,6 @@ with col2:
                     st.session_state.data,
                     st.session_state.current_word
                 )
-                DataManager.save_data(st.session_state.data)
                 
                 # Reset for next word
                 st.session_state.current_word = None
@@ -327,17 +329,24 @@ with st.form("add_word_form", clear_on_submit=True):
     submit = st.form_submit_button("➕ Kelime Ekle")
     if submit:
         updated = DataManager.add_word(
-            st.session_state.data,
+            st.session_state.base_data,
             new_english,
             new_turkish,
             new_level,
             "New",
         )
-        if len(updated) == len(st.session_state.data):
+        if len(updated) == len(st.session_state.base_data):
             st.warning("Bu kelime zaten var veya boş giriş yapıldı.")
         else:
-            st.session_state.data = updated
-            DataManager.save_data(st.session_state.data)
+            DataManager.save_data(updated)
+            st.session_state.base_data = updated
+            st.session_state.data = DataManager.add_word(
+                st.session_state.data,
+                new_english,
+                new_turkish,
+                new_level,
+                "New",
+            )
             st.success("Kelime eklendi.")
 
 # Tam listeyi göster
