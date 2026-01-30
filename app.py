@@ -162,7 +162,7 @@ with st.sidebar:
     # Alt bilgi
     st.markdown("""
     ---
-    **English Vocab Analytics**
+    **English Vocabulary Learning**
     
     İngilizce kelime çalışmanızı kolaylaştırmak için tasarlanmıştır.
     """)
@@ -173,8 +173,8 @@ with st.sidebar:
 # ============================================================================
 
 # Title
-st.markdown("<div class='title-main'>📚 English Vocab Analytics</div>", unsafe_allow_html=True)
-st.markdown("**İngilizce için kelime çalışması**")
+st.markdown("<div class='title-main'>📚 English Vocabulary Learning and Analysis</div>", unsafe_allow_html=True)
+st.markdown("**İngilizce kelime öğrenme ve analiz platformu**")
 st.divider()
 
 # Kart sistemi
@@ -366,6 +366,6 @@ csv = st.session_state.data.to_csv(index=False)
 st.download_button(
     label="📥 CSV İndir",
     data=csv,
-    file_name="erasmus_vocab.csv",
+    file_name="english_vocab.csv",
     mime="text/csv"
 )
