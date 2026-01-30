@@ -10,6 +10,7 @@ class DataManager:
     CSV_FILE = "english_vocab.csv"
     EXTRA_WORDS_CSV = "extra_words.csv"
     EXTRA_WORDS_TXT = "extra_words.txt"
+    USER_DATA_DIR = "user_data"
     
     # B1/B2 örnek akademik kelimeler
     SAMPLE_WORDS = [
@@ -208,6 +209,61 @@ class DataManager:
         except Exception as e:
             print(f"Error loading data: {e}")
             return cls.initialize_csv()
+
+    @classmethod
+    def _get_user_file(cls, user_id: str) -> str:
+        safe_id = "".join(ch for ch in (user_id or "") if ch.isalnum() or ch in ("-", "_"))
+        if not safe_id:
+            safe_id = "user"
+        return os.path.join(cls.USER_DATA_DIR, f"{safe_id}.csv")
+
+    @classmethod
+    def _merge_user_with_base(cls, user_df: pd.DataFrame, base_df: pd.DataFrame) -> pd.DataFrame:
+        columns = ["English", "Turkish", "Level", "Status", "Review_Count"]
+        base_df = base_df.copy()[columns]
+        user_df = user_df.copy()[columns]
+        merged = pd.concat([base_df, user_df], ignore_index=True)
+        merged = merged.drop_duplicates(subset=["English"], keep="last")
+        merged["Review_Count"] = pd.to_numeric(merged["Review_Count"], errors="coerce").fillna(0).astype(int)
+        return merged
+
+    @classmethod
+    def load_user_data(cls, user_id: str) -> pd.DataFrame:
+        """Kullanıcıya özel ilerlemeyi yükler. Yoksa temel veriyi döndürür."""
+        base_df = cls.load_data()
+        os.makedirs(cls.USER_DATA_DIR, exist_ok=True)
+        user_file = cls._get_user_file(user_id)
+        if not os.path.exists(user_file):
+            return base_df
+
+        try:
+            user_df = pd.read_csv(user_file)
+            required_cols = {"English", "Turkish", "Level", "Status", "Review_Count"}
+            if not required_cols.issubset(user_df.columns):
+                return base_df
+            return cls._merge_user_with_base(user_df, base_df)
+        except Exception as e:
+            print(f"Error loading user data: {e}")
+            return base_df
+
+    @classmethod
+    def save_user_data(cls, user_id: str, df: pd.DataFrame) -> None:
+        """Kullanıcı ilerlemesini dosyaya kaydeder."""
+        os.makedirs(cls.USER_DATA_DIR, exist_ok=True)
+        user_file = cls._get_user_file(user_id)
+        try:
+            df.to_csv(user_file, index=False)
+        except Exception as e:
+            print(f"Error saving user data: {e}")
+
+    @classmethod
+    def reset_user_progress(cls, user_id: str) -> pd.DataFrame:
+        """Kullanıcı ilerlemesini sıfırlar (yalnızca o kullanıcı)."""
+        df = cls.load_user_data(user_id)
+        df["Status"] = "New"
+        df["Review_Count"] = 0
+        cls.save_user_data(user_id, df)
+        return df
     
     @classmethod
     def save_data(cls, df: pd.DataFrame) -> None:

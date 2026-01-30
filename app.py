@@ -1,6 +1,10 @@
 """English Vocabulary Learning and Analysis - Ana Uygulama."""
 
+import uuid
+
 import streamlit as st
+from streamlit_cookies_manager import EncryptedCookieManager
+
 from data_manager import DataManager
 from utils import (
     get_random_word,
@@ -19,6 +23,18 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+cookies = EncryptedCookieManager(prefix="evla_", password="change_this")
+if not cookies.ready():
+    st.stop()
+
+if "user_id" not in st.session_state:
+    user_id = cookies.get("user_id")
+    if not user_id:
+        user_id = str(uuid.uuid4())
+        cookies["user_id"] = user_id
+        cookies.save()
+    st.session_state.user_id = user_id
 
 # Custom CSS for better styling
 st.markdown("""
@@ -73,11 +89,8 @@ st.markdown("""
 # OTURUM DURUMU BAŞLATMA
 # ============================================================================
 
-if "base_data" not in st.session_state:
-    st.session_state.base_data = DataManager.load_data()
-
 if "data" not in st.session_state:
-    st.session_state.data = st.session_state.base_data.copy()
+    st.session_state.data = DataManager.load_user_data(st.session_state.user_id)
 
 if "current_word" not in st.session_state:
     st.session_state.current_word = None
@@ -154,8 +167,7 @@ with st.sidebar:
     
     with col2:
         if st.button("🔴 İlerlemeyi Sıfırla", use_container_width=True):
-            st.session_state.base_data = DataManager.load_data()
-            st.session_state.data = st.session_state.base_data.copy()
+            st.session_state.data = DataManager.reset_user_progress(st.session_state.user_id)
             st.session_state.current_word = None
             st.session_state.show_meaning = False
             st.success("✅ İlerleme sıfırlandı.")
@@ -245,7 +257,10 @@ with col2:
                     st.session_state.data,
                     st.session_state.current_word
                 )
-                
+                DataManager.save_user_data(
+                    st.session_state.user_id,
+                    st.session_state.data
+                )
                 # Reset for next word
                 st.session_state.current_word = None
                 st.session_state.show_meaning = False
@@ -265,7 +280,10 @@ with col2:
                     st.session_state.data,
                     st.session_state.current_word
                 )
-                
+                DataManager.save_user_data(
+                    st.session_state.user_id,
+                    st.session_state.data
+                )
                 # Reset for next word
                 st.session_state.current_word = None
                 st.session_state.show_meaning = False
@@ -328,24 +346,28 @@ with st.form("add_word_form", clear_on_submit=True):
 
     submit = st.form_submit_button("➕ Kelime Ekle")
     if submit:
+        base_data = DataManager.load_data()
         updated = DataManager.add_word(
-            st.session_state.base_data,
+            base_data,
             new_english,
             new_turkish,
             new_level,
             "New",
         )
-        if len(updated) == len(st.session_state.base_data):
+        if len(updated) == len(base_data):
             st.warning("Bu kelime zaten var veya boş giriş yapıldı.")
         else:
             DataManager.save_data(updated)
-            st.session_state.base_data = updated
             st.session_state.data = DataManager.add_word(
                 st.session_state.data,
                 new_english,
                 new_turkish,
                 new_level,
                 "New",
+            )
+            DataManager.save_user_data(
+                st.session_state.user_id,
+                st.session_state.data
             )
             st.success("Kelime eklendi.")
 
