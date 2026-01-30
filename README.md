@@ -73,7 +73,7 @@ english/
 ├── data_manager.py
 ├── utils.py
 ├── requirements.txt
-├── erasmus_vocab.csv
+├── english_vocab.csv
 ├── extra_words.csv
 └── README.md
 ```
